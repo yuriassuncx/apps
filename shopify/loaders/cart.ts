@@ -1,3 +1,4 @@
+import { getCookies } from "std/http/cookie.ts";
 import { AppContext } from "../mod.ts";
 import { getCartCookie, setCartCookie } from "../utils/cart.ts";
 import { CreateCart, GetCart } from "../utils/storefront/queries.ts";
@@ -14,7 +15,10 @@ const loader = async (
   ctx: AppContext,
 ): Promise<GetCartQuery["cart"]> => {
   const { storefront } = ctx;
-  const maybeCartId = getCartCookie(req.headers);
+  const cookies = getCookies(req.headers);
+  const selectedCartBrand = cookies["selectedCartBrand"];
+
+  const maybeCartId = getCartCookie(req.headers, selectedCartBrand);
 
   const cartId = maybeCartId ||
     await storefront.query<CreateCartMutation, CreateCartMutationVariables>(

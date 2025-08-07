@@ -1,3 +1,4 @@
+import { getCookies } from "std/http/cookie.ts";
 import { AppContext } from "../../mod.ts";
 import { getCartCookie, setCartCookie } from "../../utils/cart.ts";
 import { AddItemToCart } from "../../utils/storefront/queries.ts";
@@ -22,7 +23,9 @@ const action = async (
   ctx: AppContext,
 ): Promise<CartFragment | null> => {
   const { storefront } = ctx;
-  const cartId = getCartCookie(req.headers);
+  const cookies = getCookies(req.headers);
+  const selectedCartBrand = cookies["selectedCartBrand"];
+  const cartId = getCartCookie(req.headers, selectedCartBrand);
 
   if (!cartId) {
     throw new Error("Missing cart id");

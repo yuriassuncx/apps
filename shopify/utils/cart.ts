@@ -5,14 +5,14 @@ const SHOPIFY_PREFIX = "gid://shopify/Cart/";
 
 const ONE_WEEK_MS = 7 * 24 * 3600 * 1_000;
 
-export const getCartCookie = (headers: Headers): string | null => {
+export const getCartCookie = (headers: Headers, brand?: string): string | null => {
   const cookies = getCookies(headers);
 
-  if (!cookies[CART_COOKIE]) {
+  if (!cookies[brand ? `${CART_COOKIE}_${brand}` : CART_COOKIE]) {
     return null;
   }
 
-  return decodeURIComponent(`${SHOPIFY_PREFIX}${cookies[CART_COOKIE]}`);
+  return decodeURIComponent(`${SHOPIFY_PREFIX}${cookies[brand ? `${CART_COOKIE}_${brand}` : CART_COOKIE]}`);
 };
 
 export const setCartCookie = (headers: Headers, cartId: string) => {
