@@ -5,6 +5,7 @@ import { StabilityAiClient } from "./stabilityAiClient.ts";
 
 export interface State {
   stabilityClient: StabilityAiClient;
+  previewUrl: string;
 }
 
 interface Props {
@@ -12,17 +13,21 @@ interface Props {
    * @description The Stability AI API key
    */
   apiKey: Secret | string;
+  /**
+   * @description The URL of the preview used to render the video.
+   */
+  previewUrl: string;
 }
 
 /**
  * @title Stability
- * @name Stability
- * @description This uses the Stability AI API to generate images from text descriptions.
+ * @appName stability
+ * @description Create images from text using Stability AI’s diffusion models.
  * @category Tool
- * @logo https://logowik.com/content/uploads/images/stability-ai-icon3444.logowik.com.webp
+ * @logo https://assets.decocache.com/mcp/438d786a-4266-4196-876d-eccde1310e24/Stability.svg
  */
 export default function Stability(props: Props): App<Manifest, State> {
-  const { apiKey } = props;
+  const { apiKey, previewUrl } = props;
   const stability = new StabilityAiClient(
     typeof apiKey === "string" ? apiKey : apiKey.get() || "",
   );
@@ -30,6 +35,7 @@ export default function Stability(props: Props): App<Manifest, State> {
   return {
     state: {
       stabilityClient: stability,
+      previewUrl,
     },
     manifest,
     dependencies: [],

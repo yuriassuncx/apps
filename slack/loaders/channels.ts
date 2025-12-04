@@ -1,5 +1,5 @@
+import type { ChannelType, SlackChannel } from "../client.ts";
 import type { AppContext } from "../mod.ts";
-import type { SlackChannel, SlackResponse } from "../client.ts";
 
 export interface Props {
   /**
@@ -11,6 +11,11 @@ export interface Props {
    * @description Pagination cursor for next page of results
    */
   cursor?: string;
+  /**
+   * @description Types of channels to return
+   * @default ["public_channel"]
+   */
+  types?: ChannelType[];
 }
 
 /**
@@ -22,7 +27,39 @@ export default async function listChannels(
   props: Props,
   _req: Request,
   ctx: AppContext,
-): Promise<SlackResponse<{ channels: SlackChannel[] }>> {
-  const { limit, cursor } = props;
-  return await ctx.slack.getChannels(ctx.teamId, limit, cursor);
+): Promise<{ channels: SlackChannel[] }> {
+  const { limit, cursor, types } = props;
+  const teamId = ctx.teamId;
+
+  if (!teamId) {
+    throw new Error(
+      "Team ID is required. Please configure the Slack app with a valid team ID.",
+    );
+  }
+
+  if (!limit) {
+    // fetch all channels in loop
+    const allChannels = [];
+    let nextCursor = cursor;
+    while (true) {
+      try {
+        const response = await ctx.slack.getChannels(
+          teamId,
+          limit,
+          nextCursor,
+          types,
+        );
+        allChannels.push(...response.channels);
+        nextCursor = response.response_metadata?.next_cursor;
+        if (!nextCursor || response.channels.length === 0) {
+          break;
+        }
+      } catch {
+        break;
+      }
+    }
+    return { channels: allChannels };
+  }
+
+  return await ctx.slack.getChannels(teamId, limit, cursor, types);
 }

@@ -1,3 +1,6 @@
+import { OAuthClients } from "../mcp/utils/types.ts";
+import { SlackApiClient, SlackAuthClient } from "./utils/client.ts";
+
 /**
  * @description Response from Slack API with success/error information
  */
@@ -45,11 +48,52 @@ export interface SlackMessage {
   ts: string;
   thread_ts?: string;
   reply_count?: number;
+  files?: SlackFile[];
   reactions?: Array<{
     name: string;
     count: number;
     users: string[];
   }>;
+}
+
+/**
+ * @description A file in Slack
+ */
+export interface SlackFile {
+  id: string;
+  created: number;
+  timestamp: number;
+  name: string;
+  title: string;
+  mimetype: string;
+  filetype: string;
+  pretty_type: string;
+  user: string;
+  editable: boolean;
+  size: number;
+  mode: string;
+  is_external: boolean;
+  external_type: string;
+  is_public: boolean;
+  public_url_shared: boolean;
+  display_as_bot: boolean;
+  username: string;
+  url_private: string;
+  url_private_download: string;
+  thumb_64?: string;
+  thumb_80?: string;
+  thumb_360?: string;
+  thumb_360_w?: number;
+  thumb_360_h?: number;
+  thumb_480?: string;
+  thumb_480_w?: number;
+  thumb_480_h?: number;
+  thumb_160?: string;
+  image_exif_rotation?: number;
+  original_w?: number;
+  original_h?: number;
+  permalink: string;
+  permalink_public: string;
 }
 
 /**
@@ -84,16 +128,38 @@ export interface SlackUser {
 }
 
 /**
+ * @description Response from Slack auth.test endpoint
+ */
+export interface SlackAuthTestResponse {
+  ok: boolean;
+  url: string;
+  team: string;
+  user: string;
+  team_id: string;
+  user_id: string;
+  bot_id?: string;
+  is_enterprise_install?: boolean;
+  enterprise_id?: string;
+}
+
+export type ChannelType = "public_channel" | "private_channel" | "mpim" | "im";
+
+/**
  * @description Client for interacting with Slack APIs
  */
 export class SlackClient {
   private botHeaders: { Authorization: string; "Content-Type": string };
+  private oauthClient?: OAuthClients<SlackApiClient, SlackAuthClient>;
 
-  constructor(botToken: string) {
+  constructor(
+    botToken: string,
+    oauthClient?: OAuthClients<SlackApiClient, SlackAuthClient>,
+  ) {
     this.botHeaders = {
       Authorization: `Bearer ${botToken}`,
-      "Content-Type": "application/json",
+      "Content-Type": "application/json; charset=utf-8",
     };
+    this.oauthClient = oauthClient;
   }
 
   /**
@@ -104,13 +170,16 @@ export class SlackClient {
    */
   async getChannels(
     teamId: string,
-    limit: number = 100,
+    limit: number = 1000,
     cursor?: string,
-  ): Promise<SlackResponse<{ channels: SlackChannel[] }>> {
+    types: ChannelType[] = ["public_channel", "private_channel"],
+  ): Promise<
+    { channels: SlackChannel[]; response_metadata?: { next_cursor?: string } }
+  > {
     const params = new URLSearchParams({
-      types: "public_channel",
-      exclude_archived: "true",
-      limit: Math.min(limit, 200).toString(),
+      types: types.join(","),
+      exclude_archived: "false",
+      limit: Math.min(limit, 1000).toString(),
       team_id: teamId,
     });
 
@@ -127,23 +196,49 @@ export class SlackClient {
   }
 
   /**
-   * @description Posts a new message to a channel
-   * @param channelId The channel ID to post to
-   * @param text The message text
+   * @description Joins a Slack channel
+   * @param channelId The ID of the channel to join
    */
-  async postMessage(
+  async joinChannel(
     channelId: string,
-    text: string,
-  ): Promise<
-    SlackResponse<{ channel: string; ts: string; message: SlackMessage }>
-  > {
-    const response = await fetch("https://slack.com/api/chat.postMessage", {
+  ): Promise<SlackResponse<{ channel: SlackChannel }>> {
+    const response = await fetch("https://slack.com/api/conversations.join", {
       method: "POST",
       headers: this.botHeaders,
       body: JSON.stringify({
         channel: channelId,
-        text: text,
       }),
+    });
+
+    return response.json();
+  }
+
+  /**
+   * @description Posts a new message to a channel
+   * @param channelId The channel ID to post to
+   * @param text The message text
+   * @param opts Optional parameters: thread_ts for threading, blocks for Block Kit formatting
+   */
+  async postMessage(
+    channelId: string,
+    text: string,
+    opts: { thread_ts?: string; blocks?: unknown[] } = {},
+  ): Promise<
+    { channel: string; ts: string; message: SlackMessage; ok: boolean }
+  > {
+    const payload: Record<string, unknown> = {
+      channel: channelId,
+      text: text,
+      ...opts,
+    };
+    // Remove text if blocks are provided and text is empty (Slack requires at least one of them)
+    if (opts.blocks && opts.blocks.length > 0 && !text) {
+      delete payload.text;
+    }
+    const response = await fetch("https://slack.com/api/chat.postMessage", {
+      method: "POST",
+      headers: this.botHeaders,
+      body: JSON.stringify(payload),
     });
 
     return response.json();
@@ -288,5 +383,116 @@ export class SlackClient {
     );
 
     return response.json();
+  }
+
+  /**
+   * @description Tests authentication and returns basic information about the authenticated user/team
+   */
+  async testAuth(): Promise<SlackResponse<SlackAuthTestResponse>> {
+    const response = await fetch("https://slack.com/api/auth.test", {
+      headers: this.botHeaders,
+    });
+
+    return response.json();
+  }
+
+  /**
+   * @description Updates an existing message in a channel
+   * @param channelId The channel ID containing the message
+   * @param ts The timestamp of the message to update
+   * @param text The new message text
+   * @param opts Optional parameters: thread_ts for threading, blocks for Block Kit formatting
+   */
+  async updateMessage(
+    channelId: string,
+    ts: string,
+    text: string,
+    opts: { thread_ts?: string; blocks?: unknown[] } = {},
+  ): Promise<
+    { channel: string; ts: string; message: SlackMessage; ok: boolean }
+  > {
+    const payload: Record<string, unknown> = {
+      channel: channelId,
+      ts: ts,
+      text: text,
+      ...opts,
+    };
+    // Remove text if blocks are provided and text is empty (Slack requires at least one of them)
+    if (opts.blocks && opts.blocks.length > 0 && !text) {
+      delete payload.text;
+    }
+    const response = await fetch("https://slack.com/api/chat.update", {
+      method: "POST",
+      headers: this.botHeaders,
+      body: JSON.stringify(payload),
+    });
+    return response.json();
+  }
+
+  /**
+   * @description Opens a direct message channel with a user
+   * @param userId The user ID to open a DM with
+   */
+  async openDmChannel(userId: string): Promise<SlackResponse<{ channel: { id: string } }>> {
+    const response = await fetch("https://slack.com/api/conversations.open", {
+      method: "POST",
+      headers: this.botHeaders,
+      body: JSON.stringify({
+        users: userId,
+      }),
+    });
+
+    return response.json();
+  }
+  
+  /**
+   * @description Lists all direct message channels for the bot
+   * @param limit Maximum number of DMs to return
+   * @param cursor Pagination cursor for next page
+   */
+  async listDmChannels(
+    limit: number = 100,
+    cursor?: string,
+  ): Promise<SlackResponse<{ channels: SlackChannel[] }>> {
+    const params = new URLSearchParams({
+      types: "im",
+      limit: Math.min(limit, 100).toString(),
+    });
+
+    if (cursor) {
+      params.append("cursor", cursor);
+    }
+
+    const response = await fetch(
+      `https://slack.com/api/conversations.list?${params}`,
+      { headers: this.botHeaders },
+    );
+
+    return response.json();
+  }
+  
+  /**
+   * @description Gets information about a file
+   * @param fileId The ID of the file
+   */
+  async getFileInfo(fileId: string): Promise<SlackResponse<{ file: SlackFile }>> {
+    const params = new URLSearchParams({
+      file: fileId,
+    });
+
+    const response = await fetch(
+      `https://slack.com/api/files.info?${params}`,
+      { headers: this.botHeaders },
+    );
+
+    return response.json();
+  }
+  
+  /**
+   * @description Downloads a file from Slack
+   * @param fileUrl The URL of the file to download
+   */
+  downloadFile(fileUrl: string): Promise<Response> {
+    return fetch(fileUrl, { headers: this.botHeaders });
   }
 }

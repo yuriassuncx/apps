@@ -17,19 +17,22 @@ import * as $$$$1 from "./handlers/proxy.ts";
 import * as $$$$2 from "./handlers/redirect.ts";
 import * as $$$$3 from "./handlers/router.ts";
 import * as $$$$4 from "./handlers/sitemap.ts";
-import * as $$$0 from "./loaders/asset.ts";
-import * as $$$1 from "./loaders/extension.ts";
-import * as $$$2 from "./loaders/fonts/googleFonts.ts";
-import * as $$$3 from "./loaders/fonts/local.ts";
-import * as $$$4 from "./loaders/image.ts";
-import * as $$$5 from "./loaders/options/routes.ts";
-import * as $$$6 from "./loaders/options/urlParams.ts";
-import * as $$$7 from "./loaders/pages.ts";
-import * as $$$8 from "./loaders/redirect.ts";
-import * as $$$9 from "./loaders/redirects.ts";
-import * as $$$10 from "./loaders/redirectsFromCsv.ts";
-import * as $$$11 from "./loaders/secret.ts";
-import * as $$$12 from "./loaders/secretString.ts";
+import * as $$$0 from "./loaders/analyticsScript.ts";
+import * as $$$1 from "./loaders/asset.ts";
+import * as $$$2 from "./loaders/environment.ts";
+import * as $$$3 from "./loaders/extension.ts";
+import * as $$$4 from "./loaders/fonts/googleFonts.ts";
+import * as $$$5 from "./loaders/fonts/local.ts";
+import * as $$$6 from "./loaders/image.ts";
+import * as $$$7 from "./loaders/options/routes.ts";
+import * as $$$8 from "./loaders/options/urlParams.ts";
+import * as $$$9 from "./loaders/pages.ts";
+import * as $$$10 from "./loaders/redirect.ts";
+import * as $$$11 from "./loaders/redirects.ts";
+import * as $$$12 from "./loaders/redirectsFromCsv.ts";
+import * as $$$13 from "./loaders/secret.ts";
+import * as $$$14 from "./loaders/secretString.ts";
+import * as $$$15 from "./loaders/whitelistAssets.ts";
 import * as $$$$$$$0 from "./matchers/always.ts";
 import * as $$$$$$$1 from "./matchers/cookie.ts";
 import * as $$$$$$$2 from "./matchers/cron.ts";
@@ -59,19 +62,22 @@ const manifest = {
     "website/functions/requestToParam.ts": $0,
   },
   "loaders": {
-    "website/loaders/asset.ts": $$$0,
-    "website/loaders/extension.ts": $$$1,
-    "website/loaders/fonts/googleFonts.ts": $$$2,
-    "website/loaders/fonts/local.ts": $$$3,
-    "website/loaders/image.ts": $$$4,
-    "website/loaders/options/routes.ts": $$$5,
-    "website/loaders/options/urlParams.ts": $$$6,
-    "website/loaders/pages.ts": $$$7,
-    "website/loaders/redirect.ts": $$$8,
-    "website/loaders/redirects.ts": $$$9,
-    "website/loaders/redirectsFromCsv.ts": $$$10,
-    "website/loaders/secret.ts": $$$11,
-    "website/loaders/secretString.ts": $$$12,
+    "website/loaders/analyticsScript.ts": $$$0,
+    "website/loaders/asset.ts": $$$1,
+    "website/loaders/environment.ts": $$$2,
+    "website/loaders/extension.ts": $$$3,
+    "website/loaders/fonts/googleFonts.ts": $$$4,
+    "website/loaders/fonts/local.ts": $$$5,
+    "website/loaders/image.ts": $$$6,
+    "website/loaders/options/routes.ts": $$$7,
+    "website/loaders/options/urlParams.ts": $$$8,
+    "website/loaders/pages.ts": $$$9,
+    "website/loaders/redirect.ts": $$$10,
+    "website/loaders/redirects.ts": $$$11,
+    "website/loaders/redirectsFromCsv.ts": $$$12,
+    "website/loaders/secret.ts": $$$13,
+    "website/loaders/secretString.ts": $$$14,
+    "website/loaders/whitelistAssets.ts": $$$15,
   },
   "handlers": {
     "website/handlers/fresh.ts": $$$$0,
